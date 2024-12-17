@@ -8,9 +8,13 @@ st.set_page_config(layout="wide")
 if 'db_connection' not in st.session_state:
     st.session_state.db_connection = get_mysql_connection()
 
-# Initialize review index
+# Initialize rjeview index
 if "review_index" not in st.session_state:
     st.session_state.review_index = 1
+
+# Initialize form reset key in session state if not present
+if 'form_reset_key' not in st.session_state:
+    st.session_state.form_reset_key = 0
 
 def get_document():
     """Get document with original markdown and latest edit"""
@@ -51,12 +55,24 @@ with nav_col3:
 # Reviewer information
 st.text_input("Reviewer Name:", key="reviewer_name", placeholder="Enter your name")
 
-# Team agreement question
-st.markdown("### Question")
-st.markdown("Would people on your team agree that this is the correct way to annotate this image?")
-
 # Get current document before handling responses
 current_doc = get_document()
+
+
+# Team agreement question
+st.markdown("### Question")
+st.markdown("Would people on your team agree that there was nothing wrong with how this image was annotated?")
+
+# Display user decision status if it exists
+if current_doc and current_doc.get('user_decision'):
+    decision = current_doc['user_decision']
+    if decision.lower() == 'bad':
+        st.error("⚠️ Marked as BAD")
+    elif decision.lower() == 'save changes':
+        st.success("✅ Changes Made")
+    else:
+        st.info(f" ✅ No Changes Needed")
+
 
 # Response buttons
 response_col1, response_col2 = st.columns([1, 1])
@@ -65,8 +81,8 @@ with response_col1:
 with response_col2:
     no_clicked = st.button("❌ No")
 
-# Comments section
-comments = st.text_area("Comments:", key="review_comments", placeholder="Enter your comments here...")
+# Comments section with dynamic key for resetting
+comments = st.text_area("Comments:", key=f"review_comments_{st.session_state.form_reset_key}", placeholder="Enter your comments here...")
 
 # Handle responses
 if (yes_clicked or no_clicked) and current_doc:
@@ -83,6 +99,8 @@ if (yes_clicked or no_clicked) and current_doc:
             comments
         ):
             st.success("Review submitted successfully!")
+            # Clear the comments by incrementing the form key
+            st.session_state.form_reset_key += 1
             # Move to next document
             navigate("next")
             st.rerun()

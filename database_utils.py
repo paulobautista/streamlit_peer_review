@@ -36,7 +36,9 @@ def get_document_by_review_index(conn, review_index: int):
         conn.ping(reconnect=True)
 
         query = """
-        SELECT prd.*, d.markdown, d.image_path, aa.input_text as latest_edit
+        SELECT prd.*, d.markdown, d.image_path,
+               aa.input_text as latest_edit,
+               aa.user_decision
         FROM peer_review_documents prd
         JOIN documents d ON prd.document_id = d.id
         LEFT JOIN agent_actions aa ON prd.agent_action_id = aa.id
